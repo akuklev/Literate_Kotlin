@@ -27,6 +27,13 @@ This generalizes Kotlin's Structured Concurrency to Structured Ownership.
 
 ## Tracking Capabilities
 
+Let us introduce a new visibility modifier `restrained`. A `restrained val name = val` is visible only inside its immediate scope, but not in the downstream scopes; it has to be passed as a parameter manifestly^[Restrained fields, properties inside classes as well as nested and inner classes do not make those completely invisible, just force to use `this::Outer.` to access them, or to use fully qualified names for nested classes.].
+
+We want this visibility modifier to be also available objects both inside functions and classes, and on the top level. 
+```
+restrained object Filesystem
+```
+
 ```kotlin
 fun <object X> foo(...)
 fun <X : Oi> foo(X : X, ...)
