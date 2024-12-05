@@ -36,14 +36,8 @@ fun <L : Logger> foo(l : L) {... here l.log() is available }
 ```
 
 This way `L` will be instantiated to the anonymous singleton type of the object just produced,
-and making `l` a singleton reference. However, the ist type `L` will be bound as a static parameter
-of `foo<L>` preventing it from capturing `l` or otherwise propagating it outside the scope as
-a singleton reference. This approach gives a great control over singleton references.
-
-
-Note that with this approach it is not possible to store singleton references inside collections (or, in fact, any containers). This is not a shortcomming, but a feature: in those cases we'll have to use managed references provided by object existence scopes such as `CoroutineScope`s for `Job`s, Rustacean lifetimes for variables, and ultimately also filesystems for files, databases for tables etc. 
-This generalizes Kotlin's Structured Concurrency to Structured Ownership.
-
+and making `l` a singleton reference. With `L` being a type parameter, `l` cannot be captured
+or leak outside the scope.
 
 ## Capabilities
 
@@ -140,6 +134,8 @@ my L : Logger
 
 
 
+Note that with this approach it is not possible to store singleton references inside collections (or, in fact, any containers). This is not a shortcomming, but a feature: in those cases we'll have to use managed references provided by object existence scopes such as `CoroutineScope`s for `Job`s, Rustacean lifetimes for variables, and ultimately also filesystems for files, databases for tables etc. 
+This generalizes Kotlin's Structured Concurrency to Structured Ownership.
 
 
 # Scopes and managed references
