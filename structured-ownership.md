@@ -4,38 +4,43 @@ Capture checking & Structured Ownership
 
 # Static capture checking
 
-Singleton classes are the classes created by object declarations `object Obj : T`
-and object expressions `object : T {…}` creating anonymous singleton types. By
-partially restricting upcasts for values of singleton classes, we can implement
-static reference capture checking owing to the fact that a value `x : X` cannot
-be exported beyond the scope where it is typable without being upcasted.
+Singleton classes are the classes created by object declarations `object Obj : T` and
+object expressions `object : T {…}` creating anonymous singleton types. Singleton 
+references are identifiers _declared_ to have singleton types. By partially restricting
+upcasts for values of singleton classes, we can implement static capture checking owing
+to the fact that a value `x : X` cannot be exported beyond the scope where it is typable
+without being upcasted.
 
-Let us introduce a new inheritance modifier `object` for interfaces and classes.
-An `object interface Oi` cannot be used in type casts ~~`( as Oi)`~~, and as a type in
-declarations of argument, variables, fields, and properties ~~`x : Oi`~~. An `object
-class` is an abstract class sharing same restrictions.
-
-Object classes and interfaces can used create objects `object Obj : Oi {…}`, inherited,
-and used as upper bounds for type parameters. Object classes and interfaces can themselves
-extend non-object interfaces and classes, but all their descendants have to be object
-interfaces/classes, except for singleton classes created by object declarations
-`object Obj : Oi {…}` and anonymous classes created by object expressions `object : Oi {…}`.
-
-In particular, in scope of the declaration `object Obj : Oi {...}` is possible to
-define `val o : Obj = Obj`. However, for named objects there is no reason to do so
-as there is only object of the type `Obj` and we already can refer to it with `O`.
-Both `o : Obj` and `Obj : Obj` will befrom now on called sovereign references.
-
-For anonymous objects inherited from object interfaces:
-We cannot write `val o = obiect : Oi {...}` since `val o : Oi` forbidden.
-We only use anonymous objects in expressions like `val o : Any = object Oi {...}`
-(or use another non-object parent of `Oi` instead of `Any` if there are any)
-producing non-sovereign references to `O` or in expressions like `foo(object Oi {})`, where
+Let us introduce a new inheritance modifier `object` for interfaces and classes:
 ```kotlin
-fun <O : Oi> foo(o : O) {...}
+object interface Logger {…}
 ```
 
-This gives a great control over sovereign references to `O`! Indeed, every function that uses a sovereign reference to `O` and any object that captures a sovereign reference to `O`, must directly or inderectly obtain `<O>` as a compile-time type parameter.
+With this modifier, `Logger` cannot be used in type casts ~~`( as Logger)`~~,
+and in declarations of arguments, variables, fields, and properties ~~`x : Logger`~~.
+An `object class` is an abstract class sharing the same restrictions.
+
+Object classes and interfaces can be used create objects `object MainLogger : Logger {…}`,
+inherited, and used as upper bounds for static type parameters. They can be subtypes of non-object
+interfaces and classes, but all their subtypes have to be object interfaces/classes, except for singleton classes.
+
+In particular, in scope of the declaration `object MainLogger : Logger {…}` it is possible to
+define `val l : MainLogger = MainLogger`. However, for named objects there is no reason to
+do so as there can be only object of the type `MainLogger` and we already can refer to it
+with `MainLogger`. Both `l : MainLogger` and `MainLogger : MainLogger` will befrom now on
+called sovereign references.
+
+For anonymous objects inherited from object interfaces:
+We cannot write `val o = obiect : Logger {...}` since `val o : Logger` forbidden.
+We only use anonymous objects in expressions like `val o : Any = object Logger {...}`
+(or use any other non-object parent of `Logger` if there are any) producing non-sovereign
+references or in expressions like `foo(object Oi {})`, where
+```kotlin
+fun <L : Logger> foo(o : L) {...}
+```
+
+This gives a great control over sovereign references to `L`! Indeed, every function that
+uses a sovereign reference to  and any object that captures a sovereign reference to `O`, must directly or inderectly obtain `<O>` as a static type parameter.
 
 (Here example with file handle that cannot be exposed)
 
@@ -88,7 +93,7 @@ fun <:System> main() {
     System.out.println("Hello world!")
 }
 
-l.filter fun<:Logger> { Logger.trace(it); it > 0}
+l.filter fun<:SystemLogger> { SystemLogger.trace(it); it > 0}
 ```
 
 This way we reuse the extant type parameter system to provide syntax and semantics for capabilities.
