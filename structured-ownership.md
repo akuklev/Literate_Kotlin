@@ -1,13 +1,18 @@
-Structured Ownership
-====================
+Capture checking & Structured Ownership
+=======================================
 
 
-# Objects, References and Capabilities
+# Capture checking
 
-Singleton classes are the classes created by object declarations `object Obj : T` and
-object expressions `object : T {…}`. Using refined approach to singleton classes, it
-is possible to recover the capability checking system as proposed for Scala 3, and to
-control references in a manner similar to ??.
+Singleton classes are the classes created by object declarations `object Obj : T`
+and object expressions `object : T {…}` creating anonymous singleton types. By
+partially restricting upcasts for values of singleton classes, we can implement
+compile-time capture checking owing to the fact that a value `x : X` cannot be
+exported beyond the scope where it is typable without being upcasted.
+
+
+
+## Capabilities
 
 ## Capture checking
 
