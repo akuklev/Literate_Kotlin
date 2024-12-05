@@ -1,6 +1,6 @@
 # Structured Ownership
 
-## Object classes and interfaces
+## Using anonymous classes to controll references
 
 Let us introduce a new inheritance modifier `object` for interfaces and classes.
 An `object interface Oi` has the property that it is forbidden to ever declare variables or arguments of the type `Oi`, or to use type casts `( as Oi)`.
