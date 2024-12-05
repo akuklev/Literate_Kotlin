@@ -10,32 +10,46 @@ partially restricting upcasts for values of singleton classes, we can implement
 compile-time capture checking owing to the fact that a value `x : X` cannot be
 exported beyond the scope where it is typable without being upcasted.
 
-
-
 ## Capabilities
 
-## Capture checking
-
-Normally, inner scopes inherit all identifiers from their parent scopes.
-Let us introduce a new visibility modifier `restrained` to prevent this behavior.
+We'll start by introducing a new visibility modifier `restrained` that prevents
+an identifier from being automatically passed down into all inner scopes:
 ```kotlin
-restrained class X : T {…}
+restrained class X {…}
 restrained val n = 1
 
 class Y(…) {… X and n are not visible here }
 ```
 
-If neccessary, we can pass them explicitly:
+If neccessary, types and values can be passed explicitly:
 ```kotlin
-restrained class X : T {…}
+restrained class X {…}
 restrained val n = 1
 
-class Y<X : T>(n : Int, …) {… some type X and some value x are visible here }
-
+class Y<X : T>(n : Int, …) {… shadowing type X and value x are visible here }
 val y = Y<X>(n, args) // Here we pass the right X and n
 ```
 
+It can happen that we have an unrestrained variable of a restrained type:
+```kotlin
+restrained class X(…) {…}
+val x = X(args)
 
+class Y(…) { /* x is available here, but what type does it have??? */}
+```
+
+In this case, `x` itself cannot be used, but it is possible to use 
+`(x as T)` for any `T` available at use site, `(x as Any?)` being
+available in any case. Now if we were to pass the type `X` explicitly,
+we could write `(x as X)`, which is the original `x`. Availability
+of the type of `x` provides the _capability_ to use `x` proper.
+
+```kotlin
+restrained class X(…) {…}
+val x = X(args)
+
+class Y<S>(…) { /* x is available here, but what type does it have??? */}
+```
 
 ---
 
