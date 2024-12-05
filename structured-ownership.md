@@ -69,7 +69,7 @@ This generalizes Kotlin's Structured Concurrency to Structured Ownership.
 
 ```kotlin
 fun foo<L : &Logger>() === fun <L : Logger> foo(L : L),
-with restriction that L can be used only in type parameters and for path-dependent-types L.MemberType
+with restriction that L can be used only in type parameters and to access L.InnerClasse types.
 ```
 
 my L : Logger
