@@ -16,8 +16,8 @@ Let us introduce a new inheritance modifier `object` for interfaces and classes:
 object interface Logger {…}
 ```
 
-With this modifier, `Logger` cannot be used in type casts ~~`( as Logger)`~~,
-and in declarations of arguments, variables, fields, and properties ~~`x : Logger`~~.
+With this modifier, `Logger` cannot be used in type casts `( as Logger)`,
+and in declarations of arguments, variables, fields, and properties (`x : Logger`).
 An `object class` is an abstract class sharing the same restrictions.
 
 Object classes and interfaces can be used create objects `object MainLogger : Logger {…}`,
@@ -60,6 +60,10 @@ bar(args) fun(object L : Logger) {
 To spare indentation, we can also introduce notation similar to `using` in C#
 object L : Logger = bar(args)
 ... // the rest of the scope is turned into a callback
+
+to use it, we need a new kind of functions akin to suspend functions:
+
+object fun bar(args) : Logger {... return object : Logger {…}} 
 ```
 
 Note that with this approach it is not possible to store singleton references inside collections (or, in fact, any containers). This is not a shortcomming, but a feature: in those cases we'll have to use managed references provided by object existence scopes such as `CoroutineScope`s for `Job`s, Rustacean lifetimes for variables, and ultimately also filesystems for files, databases for tables etc. 
