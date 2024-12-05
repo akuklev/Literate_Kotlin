@@ -6,8 +6,81 @@ Structured Ownership
 
 Singleton classes are the classes created by object declarations `object Obj : T` and
 object expressions `object : T {…}`. Using refined approach to singleton classes, it
-is possible to recover the capability tracking system as proposed for Scala 3, and to
+is possible to recover the capability checking system as proposed for Scala 3, and to
 control references in a manner similar to ??.
+
+## Tracking Capabilities
+
+Normally, inner scopes inherit all identifiers from their parent scopes.
+Let us introduce a new visibility modifier `restrained` to prevent this behavior.
+```kotlin
+restrained class X : T {…}
+restrained val x = 1
+
+class Y(…) {… X and x are not visible here }
+```
+
+If neccessary, we can pass them explicitly:
+
+```kotlin
+restrained class X : T {…}
+restrained val x = 1
+
+class Y<X : T>(x : Int, …) {… some type X and some value x are visible here }
+
+val y = Y<X>(x, args) // Here we pass the right X and x
+```
+
+
+
+
+
+Consider the following code:
+```kotlin
+val l : List<Int> = ...
+
+l.filter { it > n }    // Error: n is not visible inside
+```
+
+Restrained visibility can be also applied to classes:
+```kotlin
+restrained class X : T {…}
+class Y(…) {… Obj not visible here }
+
+val y = Y(args)
+```
+
+We can explicitly propagate X into Y:
+```kotlin
+restrained class X : T {…}
+restrained val x = 1
+
+class Y(…) {… X and x are not visible here }
+
+val y = Y(args)
+```
+
+```kotlin
+  restrained object Obj : T {…}
+  class Cls {/* Obj is invisible here */}
+  fun foo() {/*  here  */}
+  l.filter {/* or here */}
+```
+
+Let us introduce the following notation to explicitly propagate types into inner scopes:
+```kotlin
+restrained object Obj : T {…}
+class Cls<&Obj> {/* Only the type Obj is visible here */}
+fun <&Obj> foo() {/*  here  */}
+l.filter fun<&Obj> {/* and here */}```
+```
+
+A `restrained val name = val` is visible only inside its immediate scope, but not in the downstream scopes; it has to be passed as a parameter manifestly^[Restrained fields, properties inside classes as well as nested and inner classes do not make those completely invisible, just force to use `this::Outer.` to access them, or to use fully qualified names for nested classes.].
+
+We want this visibility modifier to be also available objects both inside functions and classes, and on the top level. 
+```
+restrained object Filesystem
+```
 
 
 
