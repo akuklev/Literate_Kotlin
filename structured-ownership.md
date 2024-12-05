@@ -64,8 +64,8 @@ This way we reuse the extant type parameter system to provide syntax and semanti
 ## Static capture checking via anonymous singleton classes
 
 Whenever you use an object expression `object : T {…}` to create an anonymous object,
-you also create an anonymous class. This circumstance can be used to control reference
-propagation and capture in compile time.
+you also create an anonymous class. This circumstance can be used for static reference
+capture checking.
 
 First let us introduce a new inheritance modifier `object` for interfaces and classes.
 An `object interface Oi` cannot be used in type casts ~~`( as Oi)`~~, and as a type in
