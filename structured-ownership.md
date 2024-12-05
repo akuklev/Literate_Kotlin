@@ -15,25 +15,22 @@ Normally, inner scopes inherit all identifiers from their parent scopes.
 Let us introduce a new visibility modifier `restrained` to prevent this behavior.
 ```kotlin
 restrained class X : T {…}
-restrained val x = 1
+restrained val n = 1
 
-class Y(…) {… X and x are not visible here }
+class Y(…) {… X and n are not visible here }
 ```
 
 If neccessary, we can pass them explicitly:
-
 ```kotlin
 restrained class X : T {…}
-restrained val x = 1
+restrained val n = 1
 
-class Y<X : T>(x : Int, …) {… some type X and some value x are visible here }
+class Y<X : T>(n : Int, …) {… some type X and some value x are visible here }
 
-val y = Y<X>(x, args) // Here we pass the right X and x
+val y = Y<X>(n, args) // Here we pass the right X and x
 ```
 
-
-
-
+---
 
 Consider the following code:
 ```kotlin
