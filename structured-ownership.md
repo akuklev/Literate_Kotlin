@@ -1,6 +1,6 @@
 # Structured Ownership
 
-## Using anonymous classes to controll references
+## Using anonymous classes to control references
 
 Whenever you use an object expression `object O : T {}` to create an anonymous object, you also create an anonymous class.
 This circumstance can be used to control reference propagation and capture in compile time.
