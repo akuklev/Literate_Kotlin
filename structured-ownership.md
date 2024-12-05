@@ -171,13 +171,21 @@ This way we reuse the extant type parameter system to provide syntax and semanti
 
 # Scopes and managed references
 
-Singleton references cannot be stored inside collections `Collection<T>`, since the type `T` cannot be a singleton type if we want the collection to be able to store more than one reference. To prevent capture and leaking of serial objects as well, we have to resort to path dependent types, while taking inspiration from structured concurrency at the same time.
+Singleton references cannot be stored inside collections `Collection<T>`, since the type `T` cannot be a singleton type if we want the collection to be able to store more than one reference. To prevent capture and leaking of serial objects as well, we have to resort to path dependent types, while taking inspiration from Rustacean lifetimes and Kotlinesque structured concurrency at the same time:
 
-This is not a shortcomming, but a feature: in those cases we'll have to use managed references provided by object existence scopes such as `CoroutineScope`s for `Job`s, Rustacean lifetimes for variables, and ultimately also filesystems for files, databases for tables etc. 
+```kotlin
+object cs : CoroutineScope(this)
+object lt : Lifetime(this)
+
+val j : cs.Job = cs.launch { ... }
+val r : lt.Ref<Int> = lt.new<Int>(5) 
+```
+
+We call `j` and `r` managed references, and objects `cs : CoroutineScope` and `lt : Lifetime` their respective existence scopes: `j` and `r` refer to objects that exist within `cs` and `lt` respectively. Their respective types are inner classes of `cs` and `lt` without any parent classes except `Any`. Thus, `j` and `r` can only be treated as values of the type Any outside of the scope where `cs` and `lt` are defined. This way we prevent leaking and capture.
+
 This generalizes Kotlin's Structured Concurrency to Structured Ownership.
 
 Let us introduce the following notation:
-
 ```kotlin
 fun foo<cs : &CoroutineScope>() === fun <T : CoroutineScope> foo(cs : T)
 ```
