@@ -11,31 +11,28 @@ upcasts for values of singleton classes, we can implement static capture checkin
 to the fact that a value `x : X` cannot be exported beyond the scope where it is typable
 without being upcasted.
 
-Let us introduce a new inheritance modifier `object` for interfaces and classes:
+Let us introduce a new inheritance modifier `object` for interfaces and abstract classes:
 ```kotlin
-object interface Logger {…}
+object interface Logger { fun log(s : String) }
 ```
 
-With this modifier, `Logger` cannot be used in type casts `( as Logger)`,
-and in declarations of arguments, variables, fields, and properties (`x : Logger`).
-An `object class` is an abstract class sharing the same restrictions.
+With this modifier, `Logger` can be only used to create objects `object MainLogger : Logger {…}`,
+extended by other object `object` interfaces and classes, and as an upper bound for static
+type parameters, but cannot be used in casts ~~`( as Logger)`~~ and declarations ~~`x : Logger`~~.
 
-Object classes and interfaces can be used create objects `object MainLogger : Logger {…}`,
-inherited, and used as upper bounds for static type parameters. They can be subtypes of non-object
-interfaces and classes, but all their subtypes have to be object interfaces/classes, except for 
-singleton classes.
+Object interfaces and classes can be subtypes of non-object interfaces and classes, but all
+their subtypes have to be object interfaces/classes, except for singleton classes.
 
-In particular, in scope of the declaration `object MainLogger : Logger {…}` it is possible to
-define a singleton reference `val l : MainLogger = MainLogger`. However, for named objects
-there is no reason to do so as there can be only object of the type `MainLogger` and we
-already can refer it as `MainLogger`.
-
-For anonymous objects inherited from object interfaces or classes it is not possible to define
-`val o = object : Logger {…}` since `val o : Logger` is forbidden. We can either upcast the
-result into a non-singleton reference, e.g. `val o : Any = object Logger {…}`,
-or pass it into a generic function `foo(object : Logger {…})`, where
+In scope of the declaration `object MainLogger : Logger {…}` it is possible to define a
+singleton reference `val l : MainLogger = MainLogger`, but it is not possible to define
+`val l = object : Logger {…}` for an anonymous logger, because the declaration `val l : Logger`
+is forbidden for an object interface `Logger`. It is possible to upcast the result into a non-singleton
+reference, e.g. `val l : Any = object Logger {…}`, but in this case it is not possible to
+invoke `l.log()` as it is not a member of `Any`. It is also impossible to access it via
+`(l as Logger).log()` since such casts are also forbidden. The only thing we can do is to
+pass it into a generic function `foo(object : Logger {…})`, where
 ```kotlin
-fun <L : Logger> foo(l : L) {…}
+fun <L : Logger> foo(l : L) {... here l.log() is available }
 ```
 
 This way `L` will be instantiated to the anonymous singleton type of the object just produced,
@@ -43,43 +40,9 @@ and making `l` a singleton reference. However, the ist type `L` will be bound as
 of `foo<L>` preventing it from capturing `l` or otherwise propagating it outside the scope as
 a singleton reference. This approach gives a great control over singleton references.
 
-Let us introduce a bit of syntactic sugar:
-```kotlin
-fun foo(object L : Logger) === fun <L : Logger> foo(L : L)
-```
-
-If we want to “return” an object from a function, we can use a callback instead
-```kotlin
-fun bar(…, block : (object Logger)->T) : T
-...
-
-bar(args) fun(object L : Logger) {
-  .. here we have and L : L
-}
-
-To spare indentation, we can also introduce notation similar to `using` in C#
-object L : Logger = bar(args)
-... // the rest of the scope is turned into a callback
-
-to use it, we need a new kind of functions akin to suspend functions:
-
-object fun bar(args) : Logger {... return object : Logger {…}} 
-```
 
 Note that with this approach it is not possible to store singleton references inside collections (or, in fact, any containers). This is not a shortcomming, but a feature: in those cases we'll have to use managed references provided by object existence scopes such as `CoroutineScope`s for `Job`s, Rustacean lifetimes for variables, and ultimately also filesystems for files, databases for tables etc. 
 This generalizes Kotlin's Structured Concurrency to Structured Ownership.
-
----
-
-```kotlin
-fun foo<L : &Logger>() === fun <L : Logger> foo(L : L),
-with restriction that L can be used only in type parameters and to access L.InnerClasse types.
-```
-
-my L : Logger
-
-
-
 
 
 ## Capabilities
@@ -133,6 +96,29 @@ l.filter fun<:SystemLogger> { SystemLogger.trace(it); it > 0}
 This way we reuse the extant type parameter system to provide syntax and semantics for capabilities.
 
 
+A bit of syntactic sugar 
+```kotlin
+fun foo(object L : Logger) === fun <L : Logger> foo(L : L)
+```
+
+If we want to “return” an object from a function, we can use a callback instead
+```kotlin
+fun bar(…, block : (object Logger)->T) : T
+...
+
+bar(args) fun(object L : Logger) {
+  .. here we have and L : L
+}
+
+To spare indentation, we can also introduce notation similar to `using` in C#
+object L : Logger = bar(args)
+... // the rest of the scope is turned into a callback
+
+to use it, we need a new kind of functions akin to suspend functions:
+
+object fun bar(args) : Logger {... return object : Logger {…}} 
+```
+
 
 ```kotlin
 fun <object X> foo(...)
@@ -141,5 +127,19 @@ fun <X : Oi> foo(X : X, ...)
 class Foo<object X : T>
 class Foo<X : Oi>(val X : X, ...)
 ```
+
+
+---
+
+```kotlin
+fun foo<L : &Logger>() === fun <L : Logger> foo(L : L),
+with restriction that L can be used only in type parameters and to access L.InnerClasse types.
+```
+
+my L : Logger
+
+
+
+
 
 # Scopes and managed references
