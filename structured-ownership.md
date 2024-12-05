@@ -39,6 +39,37 @@ This way `L` will be instantiated to the anonymous singleton type of the object 
 and making `l` a singleton reference. With `L` being a type parameter, `l` cannot be captured
 or leak outside the scope.
 
+# Unique references
+
+Object interfaces can be also used to prevent `this` from leaking in type-safe builders by
+making the type of contexts for context receivers an object interface:
+```kotlin
+object interface ListAccumulator<E> {…}
+fun interface ListBuilder<E> { fun <C : ListAccumulator<E>> C.build() }
+inline fun <E> buildList(builder : ListBuilder<E>): List<E>
+
+// with syntactic sugar, it can be written
+
+inline fun <E> buildList(builder : (object ListAccumulator<E>).()-> Unit): List<E>
+```
+
+Additionaly we want to introduce a modifier that allows instantiating static type parameters
+only by anonymous singleton types, which guarantees uniqueness of the respective reference.
+
+```kotlin
+fun interface ListBuilder<E> {
+  fun <new C : ListAccumulator<E>> C.build()
+}
+```
+
+: object : Table {generate} 
+// body can even have an additional guarantee that its refrence to the respective list builder is unique:
+inline fun <E> buildList(body : (private ListBuilder<E>).() -> Unit): List<E>
+
+
+The private modifier allows to pass only objects types of which are anonymous at the call site, which guarantees
+the uniqueness of the reference.
+
 ## Capabilities
 
 We'll start by introducing a new visibility modifier `restricted` for classes,
