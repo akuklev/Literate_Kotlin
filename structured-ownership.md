@@ -61,8 +61,7 @@ l.filter fun<:Logger> { Logger.trace(it); it > 0}
 This way we reuse the extant type parameter system to provide syntax and semantics for capabilities.
 
 
-## Using singleton classes to control references
-
+## Static capture checking via anonymous singleton classes
 
 Whenever you use an object expression `object : T {…}` to create an anonymous object,
 you also create an anonymous class. This circumstance can be used to control reference
