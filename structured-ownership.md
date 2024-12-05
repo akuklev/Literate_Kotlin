@@ -167,24 +167,21 @@ l.filter fun<:SystemLogger> { SystemLogger.trace(it); it > 0}
 
 This way we reuse the extant type parameter system to provide syntax and semantics for capabilities.
 
+(TODO: Discuss effect polymorphism and capability propagation modelled after ideas proposed for Scala3)
+
 # Scopes and managed references
 
-Using our approach it is not possible to store singleton references inside collections (or, in fact, any containers). This is not a shortcomming, but a feature: in those cases we'll have to use managed references provided by object existence scopes such as `CoroutineScope`s for `Job`s, Rustacean lifetimes for variables, and ultimately also filesystems for files, databases for tables etc. 
+Singleton references cannot be stored inside collections `Collection<T>`, since the type `T` cannot be a singleton type if we want the collection to be able to store more than one reference. To prevent capture and leaking of serial objects as well, we have to resort to path dependent types, while taking inspiration from structured concurrency at the same time.
+
+This is not a shortcomming, but a feature: in those cases we'll have to use managed references provided by object existence scopes such as `CoroutineScope`s for `Job`s, Rustacean lifetimes for variables, and ultimately also filesystems for files, databases for tables etc. 
 This generalizes Kotlin's Structured Concurrency to Structured Ownership.
 
+Let us introduce the following notation:
 
 ```kotlin
-fun <object X> foo(...)
-fun <X : Oi> foo(X : X, ...)
-
-class Foo<object X : T>
-class Foo<X : Oi>(val X : X, ...)
+fun foo<cs : &CoroutineScope>() === fun <T : CoroutineScope> foo(cs : T)
 ```
-
-```kotlin
-fun foo<L : &Logger>() === fun <L : Logger> foo(L : L),
-with restriction that L can be used only in type parameters and to access L.InnerClasse types.
-```
+with the restriction that cs can be only used to access its inner types like `cs.Job`, the both the static parameter `T` remains invisible inside `foo`, so as also the value `cs` except for the path type application. It will be also used for interface `(lf : Lifetime).Ref<T>` and `(lf : Lifetime).MutRef<T>`.
 
 ---
 
