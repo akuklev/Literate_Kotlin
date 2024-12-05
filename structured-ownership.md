@@ -19,17 +19,13 @@ fun <O : Oi> foo(o : O) {...}
 
 This gives a great control over sovereign references to `O`! Indeed, every function that uses a sovereign reference to `O` and any object that captures a sovereign reference to `O`, must directly or inderectly obtain `<O>` as a compile-time type parameter.
 
+(Here example with file handle that cannot be exposed)
+
+Note that with this approach it is not possible to store sovereign references inside collections. This is not a shortcomming, but a feature: in those cases we'll have to use managed references provided
+by object existence scopes such as `CoroutineScope`s for `Job`s, Rustacean lifetimes for variables, and ultimately also filesystems for files, databases for tables etc. 
+This generalizes Kotlin's Structured Concurrency to Structured Ownership.
+
 ## Capabilities
-
-
-At present we do not have a way store collections of objects, and that's for a good reason: such collections have to be managed. Later we will introduce existence scopes (such as `CoroutineScope`s for `Job`s, Rustacean lifetimes for variables, and ultimately also filesystems for files, databases for tables etc.) that generalize Kotlin's approach to Structured Concurrency to Structured Ownership.
-Managed references
-
-as value of object type (rather than “Any” or another non-object parent type)
-
-(of a type inherited from Oi in its body has 
-
-
 
 ```kotlin
 fun <object X> foo(...)
