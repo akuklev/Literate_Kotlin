@@ -165,38 +165,56 @@ my L : Logger
 
 
 
+# Scopes and managed references
 Note that with this approach it is not possible to store singleton references inside collections (or, in fact, any containers). This is not a shortcomming, but a feature: in those cases we'll have to use managed references provided by object existence scopes such as `CoroutineScope`s for `Job`s, Rustacean lifetimes for variables, and ultimately also filesystems for files, databases for tables etc. 
 This generalizes Kotlin's Structured Concurrency to Structured Ownership.
 
-# Computed types
-
-```kotlin
-class GeneratedClass<Parent>
-
-...
-fun init selectT(cols) : GeneratedClass<this.View>
-fun select(const cols) : this.View & selectT(cols)
-```
+---
 
 # Type providers
-Static objects have two initialization phases: static initialization and late initialization 
 
+A type provider is a function of the following signature:
+```kotlin
+init object fun H2Db(connString : String) : GeneratedFinalClass<DbBase>
 ```
-object fun H2Db(const connString : String) {
-  return object H2Db {
-    const val schema = 
-  }
-}
 
+Type providers are meant to be used to connect standalone external resources as static objects like this:
+```kotlin
+restricted object Db = H2Db("jdbc:h2:coffees.h2.db")
 ```
+The object `Db` will be initised on first access, but its type (also called `Db`) has
+to be computed in compile-time, and that's precisely what the type provider function
+does. `H2DB(connString : String)` will be executed in compile time, and generate
+the future type of `Db` including its readable source (to be used for debugging
+purposes). It can have side effects, in particular it can connect to the database
+in compile-time, retrieve its schema (including its version number) and store it as
+in a static field (i.e. as a `const val`) inside the newly generated type. The resulting
+type is required to have a default constructor with no arguments, that will take care
+of the late initialization (happens on the first access). In our case, the constructor
+will probably connect to the database ensuring that its schema still matches the content
+of `const val schema` retrieved in the compile time.
+
+Assuming we can have type members as in Scala, we can also implement method
+```kotlin
+val users = Db.table("users")
+```
+that returns a value of an anonymous subtype of `Db.Table`, computed using `Db.schema`.
+
+To provide its signature, we'll need the following
+```kotlin
+abstract class DbBase {
+  type Table
+  private init object fun Table(name : String) : GeneratedFinalClass<this.Table>
+  public fun table(const name : String) : Table(name)
+} 
+```
+
+Const modifier on an argument means that the argument has to be available in compile-time,
+for example so it can be used to compute the type. Type provider methods (the ones declared as `init object fun`)
+can be used in contexts where types are expected.
 
 ```kotlin
-restricted object DataSource : H2Db = H2Db("jdbc:h2:coffees.h2.db")
-  // has a const schema : Schema inside
-
-val users = DataSource.table("users")
-  // Checks that schema.version matches the actual version
-  // uses schema to compute an anonymous subtype of inner object class DataSource.Table
+  type View
+  private init object fun View(cols : this.ColSpec) : GeneratedFinalClass<this.View>
+  public fun select(const cols : this.ColSpec) : View(cols)
 ```
-
-# Scopes and managed references
