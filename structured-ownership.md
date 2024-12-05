@@ -12,44 +12,59 @@ exported beyond the scope where it is typable without being upcasted.
 
 ## Capabilities
 
-We'll start by introducing a new visibility modifier `restrained` that prevents
-an identifier from being automatically passed down into all inner scopes:
+We'll start by introducing a new visibility modifier `restricted` for classes,
+interfaces and objects. It makes those types invisible in nested scopes except
+as upper bounds for type parameters:
 ```kotlin
-restrained class X {…}
-restrained val n = 1
+restricted class X {…}
 
-class Y(…) {… X and n are not visible here }
+class Y(…) {… X is not not visible here }
 ```
 
-If neccessary, types and values can be passed explicitly:
+It can happen that we have a variable of a restrained type:
 ```kotlin
-restrained class X {…}
-restrained val n = 1
+restricted data class X(val n : Int)
+val x = X(1)
 
-class Y<X : T>(n : Int, …) {… shadowing type X and value x are visible here }
-val y = Y<X>(n, args) // Here we pass the right X and n
+class Y(…) {… Here, x : Any, x.n is inaccessible }
 ```
 
-It can happen that we have an unrestrained variable of a restrained type:
-```kotlin
-restrained class X(…) {…}
-val x = X(args)
-
-class Y(…) { /* x is available here, but what type does it have??? */}
-```
-
-In this case, `x` itself cannot be used, but it is possible to use 
-`(x as T)` for any `T` available at use site, `(x as Any?)` being
-available in any case. Now if we were to pass the type `X` explicitly,
-we could write `(x as X)`, which is the original `x`. Availability
-of the type of `x` provides the _capability_ to use `x` proper.
+We can explicitly pass the type `X` to regain the _capability_ access members of `x`.
 
 ```kotlin
-restrained class X(…) {…}
-val x = X(args)
+restricted data class X(val n : Int)
+val x = X(1)
 
-class Y<S>(…) { /* x is available here, but what type does it have??? */}
+class Y<S : X>(…) {… we can use (x as S).n}
+
+val y = Y<X>(args) // Here we pass the original X as S
 ```
+
+Now let me use another names so you can see the point:
+```kotlin
+restricted object System {… lots of methods for IO}
+
+fun foo() {… here, System : Any, no methods can be used }
+fun <S : System> bar() {… here we can use (System as S) to access all the methods}
+```
+
+This last case deserves syntactic sugar that allows to simply write `System` instead
+of `(System as S)`:
+```kotlin
+fun <:System> main() {
+    System.out.println("Hello world!")
+}
+
+l.filter fun<:Logger> { Logger.trace(it); it > 0}
+```
+
+To deal with 
+
+In order to call a function of the type `<:Logger,:>()`
+
+This way we reuse the extant type parameter system to provide syntax and semantics for capabilities. 
+
+
 
 ---
 
