@@ -1,27 +1,41 @@
-# Structured Ownership
+Structured Ownership
+====================
 
-## Using anonymous classes to control references
 
-Whenever you use an object expression `object O : T {}` to create an anonymous object, you also create an anonymous class.
-This circumstance can be used to control reference propagation and capture in compile time.
-As a byproduct we will also be able to recreate a capability tracking system almost exactly as in proposed in Scala 3.
+# Objects, References and Capabilities
+
+Singleton classes are the classes created by object declarations `object Obj : T` and
+object expressions `object : T {…}`. Using refined approach to singleton classes, it
+is possible to recover the capability tracking system as proposed for Scala 3, and to
+control references in a manner similar to ??.
+
+
+
+## Using singleton classes to control references
+
+
+Whenever you use an object expression `object : T {…}` to create an anonymous object,
+you also create an anonymous class. This circumstance can be used to control reference
+propagation and capture in compile time.
 
 First let us introduce a new inheritance modifier `object` for interfaces and classes.
-An `object interface Oi` has the property that it is forbidden to ever declare variables
-or arguments of the type `Oi`, or to use type casts `( as Oi)`.
-An `object class` is an abstract class sharing the same property.
-They only can be used to create objects `object O : Oi {...}` and
-as inheritance upper bounds for other interfaces/classes and in type parameters.
+An `object interface Oi` cannot be used in type casts ~~`( as Oi)`~~, and as a type in
+declarations of argument, variables, fields, and properties ~~`x : Oi`~~. An `object
+class` is an abstract class sharing same restrictions.
 
-All descendants of object interfaces and object classes have to be object interfaces/classes
-themselves, except for exact types of objects inherited from them, for instance if you declare
-`object O : Oi {...}` is valid to write `val o : O = O`. Other than for object expressions
-that create anonymous objects, there is no reason to do so as there is only one object of the
-type `O` and we already can refer to it with `O`. Both variables `o : O` and `O : O` will be
-from now on called sovereign references.
+Object classes and interfaces can used create objects `object Obj : Oi {…}`, inherited,
+and used as upper bounds for type parameters. Object classes and interfaces can themselves
+extend non-object interfaces and classes, but all their descendants have to be object
+interfaces/classes, except for singleton classes created by object declarations
+`object Obj : Oi {…}` and anonymous classes created by object expressions `object : Oi {…}`.
+
+In particular, in scope of the declaration `object Obj : Oi {...}` is possible to
+define `val o : Obj = Obj`. However, for named objects there is no reason to do so
+as there is only object of the type `Obj` and we already can refer to it with `O`.
+Both `o : Obj` and `Obj : Obj` will befrom now on called sovereign references.
 
 Now consider the following pecularity regarding anonymous objects inherited from object interfaces:
-We cannot write `val o = obiect Oi {...}` since `val o : Oi` forbidden.
+We cannot write `val o = obiect : Oi {...}` since `val o : Oi` forbidden.
 We only use anonymous objects in expressions like `val o : Any = object Oi {...}`
 (or use another non-object parent of `Oi` instead of `Any` if there are any)
 producing non-sovereign references to `O` or in expressions like `foo(object Oi {})`, where
@@ -53,3 +67,5 @@ fun <X : Oi> foo(X : X, ...)
 class Foo<object X : T>
 class Foo<X : Oi>(val X : X, ...)
 ```
+
+# Scopes and managed references
