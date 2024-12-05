@@ -39,36 +39,96 @@ This way `L` will be instantiated to the anonymous singleton type of the object 
 and making `l` a singleton reference. With `L` being a type parameter, `l` cannot be captured
 or leak outside the scope.
 
-# Unique references
+# Syntactic sugar for objects
+
+Let us introduce a special notation for `fun <L : Logger> foo(L : L)`:
+```kotlin
+fun foo(object L : Logger)
+```
+
+We cannot return a singleton reference, but instead we can pass it to a callback
+```kotlin
+fun bar(…, block : (object Logger)-> T) {…}
+
+// Usage:
+
+bar(args) fun(object L : Logger) {
+  .. here we have and L : L
+}
+```
+
+This situation leads to a callback hell. In Kotlin we already have a solution: suspend functions, that use callbacks under the hood, but look nicer.
+Let us introduce object functions:
+```kotlin
+object fun bar(args) : Logger {...; return object : Logger {…}}
+
+// Usage:
+object L : Logger = bar(args)
+...
+```
+
+# Type-safer builders & exclusive ownership
 
 Object interfaces can be also used to prevent `this` from leaking in type-safe builders by
 making the type of contexts for context receivers an object interface:
 ```kotlin
-object interface ListAccumulator<E> {…}
-fun interface ListBuilder<E> { fun <C : ListAccumulator<E>> C.build() }
-inline fun <E> buildList(builder : ListBuilder<E>): List<E>
-
-// with syntactic sugar, it can be written
-
-inline fun <E> buildList(builder : (object ListAccumulator<E>).()-> Unit): List<E>
+object interface ListBuffer<E> {…}
+inline fun <E> buildList(builder : (object ListBuffer<E>).()-> Unit): List<E>
 ```
 
-Additionaly we want to introduce a modifier that allows instantiating static type parameters
-only by anonymous singleton types, which guarantees uniqueness of the respective reference.
-
+Let us introduce an additional modifier for arguments that only accept objects, types of which are still anonymous
+at the call site. This condition guarantees that there are no other singleton references to this object, i.e.
+we gain exclusive ownership. I propose using `my` as such modifier:
 ```kotlin
-fun interface ListBuilder<E> {
-  fun <new C : ListAccumulator<E>> C.build()
+my f : MutableFile = open(file)
+... perform io with f while being sure we have exclusive ownership till the end of scope
+```
+
+Consider one of the basic examples of type-safe builders from standard Kotlin documentation:
+```kotlin
+html {
+  head {
+    title("Sample page")
+  }
+  body {
+    ...
+  }
 }
 ```
 
-: object : Table {generate} 
-// body can even have an additional guarantee that its refrence to the respective list builder is unique:
-inline fun <E> buildList(body : (private ListBuilder<E>).() -> Unit): List<E>
+Until now we had no way enforcing that body can only be called after head, and neither of them cannot be called twice. Now that we can guarantee contexts to be exclusively owned, we could address this utilizing Kotlin's flow typing by introducing methods that switch the type of their host:
+```kotlin
+inline fun <E> html(builder : (my EmptyHtmlBuffer).()-> Unit): Html
 
+object interface HtmlBuffer {
+}
 
-The private modifier allows to pass only objects types of which are anonymous at the call site, which guarantees
-the uniqueness of the reference.
+object interface EmptyHtmlBuffer : HtmlBuffer {
+  @NextState(HtmlBufferWithHead)
+  fun head(f : HeadBuffer()-> Unit)
+}
+
+object interface HtmlBufferWithHead : HtmlBuffer {
+  @NextState(HtmlBufferWithHead)
+  fun head(f : HeadBuffer()-> Unit)
+}
+
+```
+
+```kotlin
+interface HtmlCtx
+  @NextState(HtmlCtxWithHead)
+  fun head(f : HeadCtx▸()-> Unit)
+  
+interface HtmlCtxWithHead
+  @NextState(HtmlCtxWithHeadAndBody)
+  fun body(f : BodyCtx▸()-> Unit)
+
+interface HtmlCtxWithHeadAndBody {}
+```
+
+Objects changing their type unbeknownst to their reference holders would be a disaster, for which reason type switching methods require introducing _protected_ and _private_ context receivers: `f : (protected FileHandle)▸(Xs)-> Y` forbids capturing or externalizing references to the host object, while `f : (private HtmlCtx)▸(Xs)-> Y` admits `f` to be invoked only on fresh objects or private contexts, guaranteing `this` to be a unique reference to the underlying object. Type-switching methods are necessarily private context receivers and thus can also be invoked only on objects no one else has access to, eliminating the chance of unexpected type switching. These annotations are also necessary to properly handle transient resources, e.g. buffers and streams.
+
 
 ## Capabilities
 
@@ -121,28 +181,6 @@ l.filter fun<:SystemLogger> { SystemLogger.trace(it); it > 0}
 This way we reuse the extant type parameter system to provide syntax and semantics for capabilities.
 
 
-A bit of syntactic sugar 
-```kotlin
-fun foo(object L : Logger) === fun <L : Logger> foo(L : L)
-```
-
-If we want to “return” an object from a function, we can use a callback instead
-```kotlin
-fun bar(…, block : (object Logger)->T) : T
-...
-
-bar(args) fun(object L : Logger) {
-  .. here we have and L : L
-}
-
-To spare indentation, we can also introduce notation similar to `using` in C#
-object L : Logger = bar(args)
-... // the rest of the scope is turned into a callback
-
-to use it, we need a new kind of functions akin to suspend functions:
-
-object fun bar(args) : Logger {... return object : Logger {…}} 
-```
 
 
 ```kotlin
