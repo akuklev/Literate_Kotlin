@@ -62,8 +62,7 @@ object L : Logger = bar(args)
 ... // the rest of the scope is turned into a callback
 ```
 
-Note that with this approach it is not possible to store sovereign references inside collections. This is not a shortcomming, but a feature: in those cases we'll have to use managed references provided
-by object existence scopes such as `CoroutineScope`s for `Job`s, Rustacean lifetimes for variables, and ultimately also filesystems for files, databases for tables etc. 
+Note that with this approach it is not possible to store singleton references inside collections (or, in fact, any containers). This is not a shortcomming, but a feature: in those cases we'll have to use managed references provided by object existence scopes such as `CoroutineScope`s for `Job`s, Rustacean lifetimes for variables, and ultimately also filesystems for files, databases for tables etc. 
 This generalizes Kotlin's Structured Concurrency to Structured Ownership.
 
 ---
@@ -73,6 +72,7 @@ fun foo<L : &Logger>() === fun <L : Logger> foo(L : L),
 with restriction that L can be used only in type parameters and for path-dependent-types L.MemberType
 ```
 
+my L : Logger
 
 
 
