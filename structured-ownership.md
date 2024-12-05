@@ -168,5 +168,35 @@ my L : Logger
 Note that with this approach it is not possible to store singleton references inside collections (or, in fact, any containers). This is not a shortcomming, but a feature: in those cases we'll have to use managed references provided by object existence scopes such as `CoroutineScope`s for `Job`s, Rustacean lifetimes for variables, and ultimately also filesystems for files, databases for tables etc. 
 This generalizes Kotlin's Structured Concurrency to Structured Ownership.
 
+# Computed types
+
+```kotlin
+class GeneratedClass<Parent>
+
+...
+fun init selectT(cols) : GeneratedClass<this.View>
+fun select(const cols) : this.View & selectT(cols)
+```
+
+# Type providers
+Static objects have two initialization phases: static initialization and late initialization 
+
+```
+object fun H2Db(const connString : String) {
+  return object H2Db {
+    const val schema = 
+  }
+}
+
+```
+
+```kotlin
+restricted object DataSource : H2Db = H2Db("jdbc:h2:coffees.h2.db")
+  // has a const schema : Schema inside
+
+val users = DataSource.table("users")
+  // Checks that schema.version matches the actual version
+  // uses schema to compute an anonymous subtype of inner object class DataSource.Table
+```
 
 # Scopes and managed references
