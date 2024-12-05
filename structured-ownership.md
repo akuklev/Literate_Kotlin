@@ -9,7 +9,7 @@ object expressions `object : T {…}`. Using refined approach to singleton class
 is possible to recover the capability checking system as proposed for Scala 3, and to
 control references in a manner similar to ??.
 
-## Tracking Capabilities
+## Capture checking
 
 Normally, inner scopes inherit all identifiers from their parent scopes.
 Let us introduce a new visibility modifier `restrained` to prevent this behavior.
@@ -27,8 +27,10 @@ restrained val n = 1
 
 class Y<X : T>(n : Int, …) {… some type X and some value x are visible here }
 
-val y = Y<X>(n, args) // Here we pass the right X and x
+val y = Y<X>(n, args) // Here we pass the right X and n
 ```
+
+
 
 ---
 
