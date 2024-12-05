@@ -25,7 +25,7 @@ Note that with this approach it is not possible to store sovereign references in
 by object existence scopes such as `CoroutineScope`s for `Job`s, Rustacean lifetimes for variables, and ultimately also filesystems for files, databases for tables etc. 
 This generalizes Kotlin's Structured Concurrency to Structured Ownership.
 
-## Capabilities
+## Tracking Capabilities
 
 ```kotlin
 fun <object X> foo(...)
