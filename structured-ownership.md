@@ -1,4 +1,6 @@
-# Object interfaces
+# Structured Ownership
+
+## Object classes and interfaces
 
 Let us introduce a new inheritance modifier `object` for interfaces and classes.
 An `object interface Oi` has the property that it is forbidden to ever declare variables or arguments of the type `Oi`.
