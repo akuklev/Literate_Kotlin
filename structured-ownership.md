@@ -18,7 +18,7 @@ object interface Logger { fun log(s : String) }
 
 With this modifier, `Logger` can be only used to create objects `object MainLogger : Logger {…}`,
 extended by other object `object` interfaces and classes, and as an upper bound for static
-type parameters, but cannot be used in casts ~~`( as Logger)`~~ and declarations ~~`x : Logger`~~.
+type parameters, but cannot be used in casts `(x as Logger)` and declarations (`x : Logger`).
 
 Object interfaces and classes can be subtypes of non-object interfaces and classes, but all
 their subtypes have to be object interfaces/classes, except for singleton classes.
