@@ -22,31 +22,61 @@ An `object class` is an abstract class sharing the same restrictions.
 
 Object classes and interfaces can be used create objects `object MainLogger : Logger {…}`,
 inherited, and used as upper bounds for static type parameters. They can be subtypes of non-object
-interfaces and classes, but all their subtypes have to be object interfaces/classes, except for singleton classes.
+interfaces and classes, but all their subtypes have to be object interfaces/classes, except for 
+singleton classes.
 
 In particular, in scope of the declaration `object MainLogger : Logger {…}` it is possible to
-define `val l : MainLogger = MainLogger`. However, for named objects there is no reason to
-do so as there can be only object of the type `MainLogger` and we already can refer to it
-with `MainLogger`. Both `l : MainLogger` and `MainLogger : MainLogger` will befrom now on
-called sovereign references.
+define a singleton reference `val l : MainLogger = MainLogger`. However, for named objects
+there is no reason to do so as there can be only object of the type `MainLogger` and we
+already can refer it as `MainLogger`.
 
-For anonymous objects inherited from object interfaces:
-We cannot write `val o = obiect : Logger {...}` since `val o : Logger` forbidden.
-We only use anonymous objects in expressions like `val o : Any = object Logger {...}`
-(or use any other non-object parent of `Logger` if there are any) producing non-sovereign
-references or in expressions like `foo(object Oi {})`, where
+For anonymous objects inherited from object interfaces or classes it is not possible to define
+`val o = object : Logger {…}` since `val o : Logger` is forbidden. We can either upcast the
+result into a non-singleton reference, e.g. `val o : Any = object Logger {…}`,
+or pass it into a generic function `foo(object : Logger {…})`, where
 ```kotlin
-fun <L : Logger> foo(o : L) {...}
+fun <L : Logger> foo(l : L) {…}
 ```
 
-This gives a great control over sovereign references to `L`! Indeed, every function that
-uses a sovereign reference to  and any object that captures a sovereign reference to `O`, must directly or inderectly obtain `<O>` as a static type parameter.
+This way `L` will be instantiated to the anonymous singleton type of the object just produced,
+and making `l` a singleton reference. However, the ist type `L` will be bound as a static parameter
+of `foo<L>` preventing it from capturing `l` or otherwise propagating it outside the scope as
+a singleton reference. This approach gives a great control over singleton references.
 
-(Here example with file handle that cannot be exposed)
+Let us introduce a bit of syntactic sugar:
+```kotlin
+fun foo(object L : Logger) === fun <L : Logger> foo(L : L)
+```
+
+If we want to “return” an object from a function, we can use a callback instead
+```kotlin
+fun bar(…, block : (object Logger)->T) : T
+...
+
+bar(args) fun(object L : Logger) {
+  .. here we have and L : L
+}
+
+To spare indentation, we can also introduce notation similar to `using` in C#
+object L : Logger = bar(args)
+... // the rest of the scope is turned into a callback
+```
 
 Note that with this approach it is not possible to store sovereign references inside collections. This is not a shortcomming, but a feature: in those cases we'll have to use managed references provided
 by object existence scopes such as `CoroutineScope`s for `Job`s, Rustacean lifetimes for variables, and ultimately also filesystems for files, databases for tables etc. 
 This generalizes Kotlin's Structured Concurrency to Structured Ownership.
+
+---
+
+```kotlin
+fun foo<L : &Logger>() === fun <L : Logger> foo(L : L),
+with restriction that L can be used only in type parameters and for path-dependent-types L.MemberType
+```
+
+
+
+
+
 
 ## Capabilities
 
