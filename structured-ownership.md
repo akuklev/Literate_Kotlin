@@ -100,7 +100,8 @@ Until now we had no way enforcing that body can only be called after head, and n
 ```kotlin
 inline fun <E> html(builder : (my EmptyHtmlBuffer).()-> Unit): Html
 
-object interface HtmlBuffer {
+interface HtmlBuffer {
+  fun export() : Html
 }
 
 object interface EmptyHtmlBuffer : HtmlBuffer {
@@ -109,30 +110,16 @@ object interface EmptyHtmlBuffer : HtmlBuffer {
 }
 
 object interface HtmlBufferWithHead : HtmlBuffer {
-  @NextState(HtmlBufferWithHead)
-  fun head(f : HeadBuffer()-> Unit)
+  @NextState(HtmlBufferWithHeadAndBody)
+  fun body(f : BodyBuffer()-> Unit)
 }
 
+object interface HtmlBufferWithHeadAndBody : HtmlBuffer {}
 ```
 
-```kotlin
-interface HtmlCtx
-  @NextState(HtmlCtxWithHead)
-  fun head(f : HeadCtx▸()-> Unit)
-  
-interface HtmlCtxWithHead
-  @NextState(HtmlCtxWithHeadAndBody)
-  fun body(f : BodyCtx▸()-> Unit)
+# Capabilities
 
-interface HtmlCtxWithHeadAndBody {}
-```
-
-Objects changing their type unbeknownst to their reference holders would be a disaster, for which reason type switching methods require introducing _protected_ and _private_ context receivers: `f : (protected FileHandle)▸(Xs)-> Y` forbids capturing or externalizing references to the host object, while `f : (private HtmlCtx)▸(Xs)-> Y` admits `f` to be invoked only on fresh objects or private contexts, guaranteing `this` to be a unique reference to the underlying object. Type-switching methods are necessarily private context receivers and thus can also be invoked only on objects no one else has access to, eliminating the chance of unexpected type switching. These annotations are also necessary to properly handle transient resources, e.g. buffers and streams.
-
-
-## Capabilities
-
-We'll start by introducing a new visibility modifier `restricted` for classes,
+To introduce capability tracking, let us start by introducing a new visibility modifier `restricted` for classes,
 interfaces and objects. It makes those types invisible in nested scopes except
 as upper bounds for type parameters:
 ```kotlin
@@ -180,7 +167,10 @@ l.filter fun<:SystemLogger> { SystemLogger.trace(it); it > 0}
 
 This way we reuse the extant type parameter system to provide syntax and semantics for capabilities.
 
+# Scopes and managed references
 
+Using our approach it is not possible to store singleton references inside collections (or, in fact, any containers). This is not a shortcomming, but a feature: in those cases we'll have to use managed references provided by object existence scopes such as `CoroutineScope`s for `Job`s, Rustacean lifetimes for variables, and ultimately also filesystems for files, databases for tables etc. 
+This generalizes Kotlin's Structured Concurrency to Structured Ownership.
 
 
 ```kotlin
@@ -191,21 +181,10 @@ class Foo<object X : T>
 class Foo<X : Oi>(val X : X, ...)
 ```
 
-
----
-
 ```kotlin
 fun foo<L : &Logger>() === fun <L : Logger> foo(L : L),
 with restriction that L can be used only in type parameters and to access L.InnerClasse types.
 ```
-
-my L : Logger
-
-
-
-# Scopes and managed references
-Note that with this approach it is not possible to store singleton references inside collections (or, in fact, any containers). This is not a shortcomming, but a feature: in those cases we'll have to use managed references provided by object existence scopes such as `CoroutineScope`s for `Job`s, Rustacean lifetimes for variables, and ultimately also filesystems for files, databases for tables etc. 
-This generalizes Kotlin's Structured Concurrency to Structured Ownership.
 
 ---
 
