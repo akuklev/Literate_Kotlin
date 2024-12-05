@@ -2,13 +2,13 @@ Capture checking & Structured Ownership
 =======================================
 
 
-# Capture checking
+# Static capture checking
 
 Singleton classes are the classes created by object declarations `object Obj : T`
 and object expressions `object : T {…}` creating anonymous singleton types. By
 partially restricting upcasts for values of singleton classes, we can implement
-compile-time capture checking owing to the fact that a value `x : X` cannot be
-exported beyond the scope where it is typable without being upcasted.
+static reference capture checking owing to the fact that a value `x : X` cannot
+be exported beyond the scope where it is typable without being upcasted.
 
 ## Capabilities
 
