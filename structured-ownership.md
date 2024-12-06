@@ -233,7 +233,7 @@ restricted object Db = H2Db("jdbc:h2:coffees.h2.db")
 ```
 The object `Db` will be initised on first access, but its type (also called `Db`) has
 to be computed in compile-time, and that's precisely what the type provider function
-does. `H2DB(connString : String)` will be executed in compile time, and generate
+does. `H2Db(connString : String)` will be executed in compile time, and generate
 the future type of `Db` including its readable source (to be used for debugging
 purposes). It can have side effects, in particular it can connect to the database
 in compile-time, retrieve its schema (including its version number) and store it as
