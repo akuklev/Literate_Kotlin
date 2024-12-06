@@ -180,8 +180,8 @@ val s: Sequence<Int>^<:SystemLogger> = generateSequence(1, Int::inc).map {
 (TODO: Discuss effect polymorphism and capability propagation modelled after ideas proposed for Scala3)
 
 We also can apply the `restricted` modifier to object arguments and variables it is used in Scala3 for checked references,
-but we don't have to if the declared types of respective objects are object interfaces or classes. We can enjoy the same
-static safety and flexibility as Scala3.captureChecking with less clutter.
+but we don't have to if the declared types of respective objects are object interfaces or classes. With respect to capability
+checking, our object classes and object interfaces are exactly the same as their capability classes.
 
 # Scopes and managed references
 
@@ -267,3 +267,24 @@ can be used in contexts where types are expected.
   private init object fun View(cols : this.ColSpec) : GeneratedFinalClass<this.View>
   public fun select(const cols : this.ColSpec) : View(cols)
 ```
+
+# Runtime-introspectable coroutines
+We suggest using labeled blocks (`name@ { code }`) in coroutines as runtime-introspectable execution states. If the job `j` is currently running inside of the labeled block `EstablishingConnection@`, we want `(j.state is EstablishingConnection)` to hold. The hierarchy of nested blocks in the coroutine should autogenerate a corresponding interface hierarchy.
+
+Those states may also carry additional data that can be used to track the progress of the job. We suggest allowing visibility modifiers `public` and `internal` for top-level `var`s and `val`s as well as the ones in labeled blocks and labeled loops:
+```kotlin
+val j = launch
+  ...prepare data
+  Moving@ for (i in files.indices)
+    public val progress = i / files.size
+    fs.move(...)
+  ...finalize
+ 
+val u = launch
+  ...
+  when (val s = j.state)
+    Moving ↦ println~ Moving files, \{s.progress · 100}% complete
+  ...
+```
+
+Invoking `j.state` must create an instant snapshot of those properties; all properties must be data-only, i.e. of primitive or purely algebraic data type.
