@@ -181,15 +181,14 @@ val j : cs.Job = cs.launch { ... }
 val r : lt.Ref<Int> = lt.new<Int>(5) 
 ```
 
-We call `j` and `r` managed references, and objects `cs : CoroutineScope` and `lt : Lifetime` their respective existence scopes: `j` and `r` refer to objects that exist within `cs` and `lt` respectively. Their respective types are inner classes of `cs` and `lt` without any parent classes except `Any`. Thus, `j` and `r` can only be treated as values of the type Any outside of the scope where `cs` and `lt` are defined. This way we prevent leaking and capture.
+We call `j` and `r` managed references, and objects `cs : CoroutineScope` and `lt : Lifetime` their respective existence scopes: `j` and `r` refer to objects that exist within `cs` and `lt` respectively. Their respective types are inner classes of `cs` and `lt` without any parent classes except `Any`. Thus, `j` and `r` can only be treated as values of the type Any outside of the scope where `cs` and `lt` are defined. This way we prevent leaking and capture. As opposed to Rust, where Lifetimes are rigidly attached to lexical scopes (in particular, bodies of functions), we allow to manage them manually generalizing Kotlin's Structured Concurrency to Structured Ownership.
 
-This generalizes Kotlin's Structured Concurrency to Structured Ownership.
-
-Let us introduce the following notation:
+For better type safety, let us additionally introduce the following notation:
 ```kotlin
-fun foo<cs : &CoroutineScope>() === fun <T : CoroutineScope> foo(cs : T)
+fun foo<cs : &CoroutineScope>() {...}
 ```
-with the restriction that cs can be only used to access its inner types like `cs.Job`, the both the static parameter `T` remains invisible inside `foo`, so as also the value `cs` except for the path type application. It will be also used for interface `(lf : Lifetime).Ref<T>` and `(lf : Lifetime).MutRef<T>`.
+for `fun <C : CoroutineScope> foo(cs : C) {...}` with the restriction that `cs` can be only used to access its inner types like `cs.Job`, while the static parameter `C` remains invisible inside `foo`, so as also the value `cs` except for the path types.
+
 
 ---
 
