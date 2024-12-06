@@ -191,10 +191,8 @@ fun <S : System> bar() {… here we can use (System as S) to access all the meth
 This last case deserves syntactic sugar that allows to simply write `System` instead
 of `(System as S)`:
 ```kotlin
-class <:System> Application {
-  fun <:System> main() {
-    System.out.println("Hello world!")
-  }
+fun <:System> main() {
+  System.out.println("Hello world!")
 }
 ```
 
