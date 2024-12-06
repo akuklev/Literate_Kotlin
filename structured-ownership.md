@@ -120,15 +120,14 @@ object interface HtmlBufferWithHeadAndBody : HtmlBuffer {}
 # Capabilities
 
 To introduce capability tracking, let us start by introducing a new visibility modifier `restricted` for classes,
-interfaces and objects. It makes those types invisible in nested scopes except
-as upper bounds for type parameters:
+interfaces and objects. It makes those types invisible in nested scopes except as upper bounds for type parameters:
 ```kotlin
 restricted class X {…}
 
 class Y(…) {… X is not not visible here }
 ```
 
-It can happen that we have a variable of a restrained type:
+It can happen that we have a variable of a restricted type:
 ```kotlin
 restricted data class X(val n : Int)
 val x = X(1)
@@ -158,16 +157,31 @@ fun <S : System> bar() {… here we can use (System as S) to access all the meth
 This last case deserves syntactic sugar that allows to simply write `System` instead
 of `(System as S)`:
 ```kotlin
-fun <:System> main() {
+class <:System> Application {
+  fun <:System> main() {
     System.out.println("Hello world!")
+  }
 }
-
-l.filter fun<:SystemLogger> { SystemLogger.trace(it); it > 0}
 ```
 
 This way we reuse the extant type parameter system to provide syntax and semantics for capabilities.
 
+To invoke functions and create objects requiring `<:System>`, we need to be in a scope that
+already captures the `<:System>` capabilities, so we urgently need the capability (pun intended) to retrofit
+any existing class `T` by capturing a capability. For that we'll write `T^<:System,...>` following Oderski.
+
+```kotlin
+val s: Sequence<Int>^<:SystemLogger> = generateSequence(1, Int::inc).map {
+  SystemLogger.log("Computing square of $it")
+  it * it
+}
+```
+
 (TODO: Discuss effect polymorphism and capability propagation modelled after ideas proposed for Scala3)
+
+We also can apply the `restricted` modifier to object arguments and variables it is used in Scala3 for checked references,
+but we don't have to if the declared types of respective objects are object interfaces or classes. We can enjoy the same
+static safety and flexibility as Scala3.captureChecking with less clutter.
 
 # Scopes and managed references
 
