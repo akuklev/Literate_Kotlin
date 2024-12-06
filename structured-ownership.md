@@ -39,7 +39,7 @@ This way `L` will be instantiated to the anonymous singleton type of the object 
 and making `l` a singleton reference. With `L` being a type parameter, `l` cannot be captured
 or leak outside the scope.
 
-# Syntactic sugar for objects
+# Object arguments, object functions, object variables, and object contexts
 
 Let us introduce a special notation for `fun <L : Logger> foo(L : L)`:
 ```kotlin
@@ -67,8 +67,6 @@ object L : Logger = bar(args)
 ...
 ```
 
-# Type-safer builders & exclusive ownership
-
 Object interfaces can be also used to prevent `this` from leaking in type-safe builders by
 making the type of contexts for context receivers an object interface:
 ```kotlin
@@ -76,6 +74,7 @@ object interface ListBuffer<E> {…}
 inline fun <E> buildList(builder : (object ListBuffer<E>).()-> Unit): List<E>
 ```
 
+# Exclusive ownership and stateful objects
 Let us introduce an additional modifier for arguments that only accept objects, types of which are still anonymous
 at the call site. This condition guarantees that there are no other singleton references to this object, i.e.
 we gain exclusive ownership. I propose using `my` as such modifier:
@@ -117,7 +116,42 @@ object interface HtmlBufferWithHead : HtmlBuffer {
 object interface HtmlBufferWithHeadAndBody : HtmlBuffer {}
 ```
 
-# Capabilities
+# Structured ownership: managed objects and their scopes
+
+Singleton references cannot be stored inside collections `Collection<T>`, since the type `T` cannot be a singleton type if we want the collection to be able to store more than one reference. To prevent capture and leaking of serial objects as well, we have to resort to path dependent types, while taking inspiration from Rustacean lifetimes and Kotlinesque structured concurrency at the same time:
+
+```kotlin
+object cs : CoroutineScope(this)
+object lt : Lifetime(this)
+
+val j : cs.Job = cs.launch { ... }
+val r : lt.Ref<Int> = lt.var<Int>(5) 
+```
+
+We call `j` and `r` managed references, and objects `cs : CoroutineScope` and `lt : Lifetime` their respective existence scopes: `j` and `r` refer to objects that exist within `cs` and `lt` respectively. Their respective types are inner classes of `cs` and `lt` without any parent classes except `Any`. Thus, `j` and `r` can only be treated as values of the type Any outside of the scope where `cs` and `lt` are defined. This way we prevent leaking and capture. As opposed to Rust, where Lifetimes are rigidly attached to lexical scopes (in particular, bodies of functions), we allow to manage them manually generalizing Kotlin's Structured Concurrency to Structured Ownership.
+
+For better type safety, let us additionally introduce the following notation:
+```kotlin
+fun foo<cs : &CoroutineScope>() {...}
+```
+for `fun <C : CoroutineScope> foo(cs : C) {...}` with the restriction that `cs` can be only used to access its inner types like `cs.Job`, while the static parameter `C` remains invisible inside `foo`, so as also the value `cs` except for the path types.
+
+Note that both `.launch` and `.var` are `my fun`ctions creating anonymous singleton types for their results. Use of `my j = cs.launch { public var progress = 0.1 }` allows to access `j.state.progress`, while use of `my r = lt.var<Int>(5)` allows to track its uniqueness, which can be temporarily lifted by passing it into `fun<lt : &Lifetime>(object t : lt.Var<Int>) {...}`, and will recover after returning from it. It is possible to allow assignment only for such unique references:
+```kotlin
+fun <T> (my lt.Var<T>).set(newVal : T)
+fun <T> (my lt.Var<T>).set(transform : (T)-> T)
+
+// now we can write
+r.set(6)
+// and
+r.set { it + 1 }
+
+// but only if `r` is a unique reference
+```
+
+The behavior of _managed objects_ is be governed by the rules of separation logic specific to their respective existence scopes^[Quantum fields in Physics can be seen as existence scopes of their field quanta (“quantum particles”) governed by rules of non-commutative separation logic describing creation, measurement, and anihilation operators.].
+
+# Explicit capability tracking
 
 To introduce capability tracking, let us start by introducing a new visibility modifier `restricted` for classes,
 interfaces and objects. It makes those types invisible in nested scopes except as upper bounds for type parameters:
@@ -183,44 +217,10 @@ checking, our object classes and object interfaces are exactly the same as their
 
 (TODO: Discuss “capability tunelling”)
 
-# Scopes and managed references
-
-Singleton references cannot be stored inside collections `Collection<T>`, since the type `T` cannot be a singleton type if we want the collection to be able to store more than one reference. To prevent capture and leaking of serial objects as well, we have to resort to path dependent types, while taking inspiration from Rustacean lifetimes and Kotlinesque structured concurrency at the same time:
-
-```kotlin
-object cs : CoroutineScope(this)
-object lt : Lifetime(this)
-
-val j : cs.Job = cs.launch { ... }
-val r : lt.Ref<Int> = lt.var<Int>(5) 
-```
-
-We call `j` and `r` managed references, and objects `cs : CoroutineScope` and `lt : Lifetime` their respective existence scopes: `j` and `r` refer to objects that exist within `cs` and `lt` respectively. Their respective types are inner classes of `cs` and `lt` without any parent classes except `Any`. Thus, `j` and `r` can only be treated as values of the type Any outside of the scope where `cs` and `lt` are defined. This way we prevent leaking and capture. As opposed to Rust, where Lifetimes are rigidly attached to lexical scopes (in particular, bodies of functions), we allow to manage them manually generalizing Kotlin's Structured Concurrency to Structured Ownership.
-
-For better type safety, let us additionally introduce the following notation:
-```kotlin
-fun foo<cs : &CoroutineScope>() {...}
-```
-for `fun <C : CoroutineScope> foo(cs : C) {...}` with the restriction that `cs` can be only used to access its inner types like `cs.Job`, while the static parameter `C` remains invisible inside `foo`, so as also the value `cs` except for the path types.
-
-Note that both `.launch` and `.var` are `my fun`ctions creating anonymous singleton types for their results. Use of `my j = cs.launch { public var progress = 0.1 }` allows to access `j.state.progress`, while use of `my r = lt.var<Int>(5)` allows to track its uniqueness, which can be temporarily lifted by passing it into `fun<lt : &Lifetime>(object t : lt.Var<Int>) {...}`, and will recover after returning from it. It is possible to allow assignment only for such unique references:
-```kotlin
-fun <T> (my lt.Var<T>).set(newVal : T)
-fun <T> (my lt.Var<T>).set(transform : (T)-> T)
-
-// now we can write
-r.set(6)
-// and
-r.set { it + 1 }
-
-// but only if `r` is a unique reference
-```
-
-The behavior of _managed objects_ should be governed by the rules of separation logic specific to their respective existence scopes^[Quantum fields in Physics can be seen as existence scopes of their field quanta (“quantum particles”) governed by rules of non-commutative separation logic describing creation, measurement, and anihilation operators.].
 
 ---
 
-# Type providers
+# Appendix I : Type providers
 
 A type provider is a function of the following signature:
 ```kotlin
@@ -262,13 +262,15 @@ Const modifier on an argument means that the argument has to be available in com
 for example so it can be used to compute the type. Type provider methods (the ones declared as `init object fun`)
 can be used in contexts where types are expected.
 
+Of course, select queries also produce objects with generated types:
+
 ```kotlin
   type View
   private init object fun View(cols : this.ColSpec) : GeneratedFinalClass<this.View>
   public fun select(const cols : this.ColSpec) : View(cols)
 ```
 
-# Runtime-introspectable coroutines
+# Appendix II : Runtime-introspectable coroutines
 We suggest using labeled blocks (`name@ { code }`) in coroutines as runtime-introspectable execution states. If the job `j` is currently running inside of the labeled block `EstablishingConnection@`, we want `(j.state is EstablishingConnection)` to hold. The hierarchy of nested blocks in the coroutine should autogenerate a corresponding interface hierarchy.
 
 Those states may also carry additional data that can be used to track the progress of the job. We suggest allowing visibility modifiers `public` and `internal` for top-level `var`s and `val`s as well as the ones in labeled blocks and labeled loops:
