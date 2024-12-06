@@ -181,7 +181,7 @@ val s: Sequence<Int>^<:SystemLogger> = generateSequence(1, Int::inc).map {
 
 We also can apply the `restricted` modifier to object arguments and variables it is used in Scala3 for checked references,
 but we don't have to if the declared types of respective objects are object interfaces or classes. With respect to capability
-checking, our object classes and object interfaces are exactly the same as their capability classes.
+checking, our object classes and object interfaces are exactly the same as their capability classes with a bit less clutter.
 
 # Scopes and managed references
 
