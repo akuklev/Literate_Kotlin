@@ -228,45 +228,56 @@ init object fun H2Db(connString : String) : GeneratedFinalClass<DbBase>
 Type providers are meant to be used to connect standalone external resources as static objects like this:
 ```kotlin
 restricted object Db = H2Db("jdbc:h2:coffees.h2.db")
+
+// or, for loose coupling
+
+restricted object Db = H2Db("jdbc:h2:coffees.h2.db") {
+  endpoint = Config.dbEndpoint
+}
 ```
 The object `Db` will be initised on first access, but its type (also called `Db`) has
 to be computed in compile-time, and that's precisely what the type provider function
 does. `H2Db(connString : String)` will be executed in compile time, and generate
 the future type of `Db` including its readable source (to be used for debugging
-purposes). It can have side effects, in particular it can connect to the database
-in compile-time, retrieve its schema (including its version number) and store it as
-in a static field (i.e. as a `const val`) inside the newly generated type. The resulting
-type is required to have a default constructor with no arguments, that will take care
-of the late initialization (happens on the first access). In our case, the constructor
-will probably connect to the database ensuring that its schema still matches the content
-of `const val schema` retrieved in the compile time.
+purposes). It can have side effects, in particular it can retrieve the database
+schema in compile-time and store it as in a static field (i.e. as a `const val`)
+inside the newly generated class. The constructor of resulting class will take 
+of the late initialization (happens on the first access). The optional `configure`
+block in the example above will be passed to that constructor.
 
-Assuming we can have type members as in Scala, we can also implement method
+In our case, the constructor will probably connect to the database ensuring that its
+schema still matches the content of `const val schema` retrieved in the compile time.
+
+Assuming we can have type members as in Scala, we can also implement methods that
+create table accessors and vie accessors:
 ```kotlin
 val users = Db.table("users")
+val names = users.select(users.firstName, users.lastName)
 ```
-that returns a value of an anonymous subtype of `Db.Table`, computed using `Db.schema`.
 
-To provide its signature, we'll need the following
+`Db.table(name)` returns a value of an anonymous subtype of `Db.Table`, computed using `Db.schema`,
+while `Table.select(*cols)` returns an anonymous subtype `Db.View` generated using `cols` and the table data.
+
+To write their signatures, we'll need both abstract inner type members (as in Scala) and type providers:
 ```kotlin
 abstract class DbBase {
-  type Table
-  private init object fun Table(name : String) : GeneratedFinalClass<this.Table>
   public fun table(const name : String) : Table(name)
+
+  private init object fun Table(name : String) : GeneratedFinalClass<this.Table>
+
+  abstract inner class Table : View
+  abstract inner class View {
+    public fun View.select(const cols : this@DbBase.ColSpec) : View(cols)
+
+    private init object fun View(cols : this.ColSpec) : GeneratedFinalClass<this@DbBase.View>
+  }
+  ...
 } 
 ```
 
 Const modifier on an argument means that the argument has to be available in compile-time,
-for example so it can be used to compute the type. Type provider methods (the ones declared as `init object fun`)
-can be used in contexts where types are expected.
-
-Of course, select queries also produce objects with generated types:
-
-```kotlin
-  type View
-  private init object fun View(cols : this.ColSpec) : GeneratedFinalClass<this.View>
-  public fun select(const cols : this.ColSpec) : View(cols)
-```
+for example so it can be used to compute the type. Type provider methods (the ones declared as
+`init object fun`) can be used in contexts where types are expected.
 
 # Appendix II : Runtime-introspectable coroutines
 We suggest using labeled blocks (`name@ { code }`) in coroutines as runtime-introspectable execution states. If the job `j` is currently running inside of the labeled block `EstablishingConnection@`, we want `(j.state is EstablishingConnection)` to hold. The hierarchy of nested blocks in the coroutine should autogenerate a corresponding interface hierarchy.
