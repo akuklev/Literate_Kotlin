@@ -1,5 +1,5 @@
-Structured Ownership and Capture Checking
-=========================================
+Objects, Capabilities, and Structured Ownership
+===============================================
 
 
 # Static capture checking
