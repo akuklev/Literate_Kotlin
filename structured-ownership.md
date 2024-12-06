@@ -177,11 +177,11 @@ val s: Sequence<Int>^<:SystemLogger> = generateSequence(1, Int::inc).map {
 }
 ```
 
-(TODO: Discuss effect polymorphism and capability propagation modelled after ideas proposed for Scala3)
-
 We also can apply the `restricted` modifier to object arguments and variables it is used in Scala3 for checked references,
 but we don't have to if the declared types of respective objects are object interfaces or classes. With respect to capability
 checking, our object classes and object interfaces are exactly the same as their capability classes with a bit less clutter.
+
+(TODO: Discuss “capability tunelling”)
 
 # Scopes and managed references
 
