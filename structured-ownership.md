@@ -178,7 +178,7 @@ object cs : CoroutineScope(this)
 object lt : Lifetime(this)
 
 val j : cs.Job = cs.launch { ... }
-val r : lt.Ref<Int> = lt.new<Int>(5) 
+val r : lt.Ref<Int> = lt.var<Int>(5) 
 ```
 
 We call `j` and `r` managed references, and objects `cs : CoroutineScope` and `lt : Lifetime` their respective existence scopes: `j` and `r` refer to objects that exist within `cs` and `lt` respectively. Their respective types are inner classes of `cs` and `lt` without any parent classes except `Any`. Thus, `j` and `r` can only be treated as values of the type Any outside of the scope where `cs` and `lt` are defined. This way we prevent leaking and capture. As opposed to Rust, where Lifetimes are rigidly attached to lexical scopes (in particular, bodies of functions), we allow to manage them manually generalizing Kotlin's Structured Concurrency to Structured Ownership.
@@ -189,6 +189,20 @@ fun foo<cs : &CoroutineScope>() {...}
 ```
 for `fun <C : CoroutineScope> foo(cs : C) {...}` with the restriction that `cs` can be only used to access its inner types like `cs.Job`, while the static parameter `C` remains invisible inside `foo`, so as also the value `cs` except for the path types.
 
+Note that both `.launch` and `.var` are `my fun`ctions creating anonymous singleton types for their results. Use of `my j = cs.launch { public var progress = 0.1 }` allows to access `j.state.progress`, while use of `my r = lt.var<Int>(5)` allows to track its uniqueness, which can be temporarily lifted by passing it into `fun<lt : &Lifetime>(object t : lt.Var<Int>) {...}`, and will recover after returning from it. It is possible to allow assignment only for such unique references:
+```kotlin
+fun <T> (my lt.Var<T>).set(newVal : T)
+fun <T> (my lt.Var<T>).set(transform : (T)-> T)
+
+// now we can write
+r.set(6)
+// and
+r.set { it + 1 }
+
+// but only if `r` is a unique reference
+```
+
+The behavior of _managed objects_ should be governed by the rules of separation logic specific to their respective existence scopes^[Quantum fields in Physics can be seen as existence scopes of their field quanta (“quantum particles”) governed by rules of non-commutative separation logic describing creation, measurement, and anihilation operators.].
 
 ---
 
