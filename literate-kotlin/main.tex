@@ -1,0 +1,31 @@
+\documentclass[a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{microtype, geometry, parskip, fontspec, newunicodechar, amsfonts, amssymb, mathtools, minted, fnpct}
+\usepackage[hybrid, definitionLists, inlineNotes]{markdown}
+\usepackage[colorlinks, linkcolor=blue, urlcolor=blue]{hyperref}
+%\usepackage[safe]{tipa}
+\usepackage{authblk, orcidlink}
+
+
+\newfontfamily{\dejamono}{DejaVu Sans Mono}
+\newunicodechar{▸}{{\dejamono ▸}}
+\newunicodechar{◂}{{\dejamono ◂}}
+
+\newunicodechar{ℂ}{{\dejamono ℂ}}
+
+\setminted{ignorelexererrors, mathescape, escapeinside=||}
+\setmonofont[Scale=0.8]{JetBrains Mono}[Contextuals=Alternate]
+
+\geometry{margin=1.3in}
+\title{\vspace{-3cm}Literate Kotlin}
+\author[ ]{Alexander Kuklev\textsuperscript{\orcidlink{0009-0004-1019-4205}1,2} ‹\url{a@kuklev.com}›\vspace{-1ex}}
+\affil[1]{\small Radboud University Nijmegen, Software Science}
+\affil[2]{\small JetBrains Research}
+\date{\vspace{-1.5em}}
+
+\begin{document}
+\maketitle
+\definecolor{dgreen}{HTML}{008000}
+\markdownInput{README.md}
+\end{document}
