@@ -1,6 +1,20 @@
 Objects, Capabilities, and Structured Ownership
 ===============================================
 
+In the Java world, it is only possible to have local variables of primitive types, all
+other variables are references to shared objects. When objects represent resources, it
+is only possible to ensure correctness statically if it is possible to lock objects
+within a certain scope, or even disable aliasing altogether. In this memo we propose
+a number of extensions for the Kotlin programming language that address this issues.
+
+With presented extensions it turns out to be possible to provide static correctness
+guarantees for the structured concurrency pioneered by Kotlin, and extend the same
+approach to embrace a generalized form of Rustacean lifetime-based borrow cheching
+mechanism.
+
+Lastly, it our approach also turns out sufficient to emulate capability checking as
+recetly proposed for Scala 3. We propose a dedicated syntactic sugar to make this
+mechanism more accessible.
 
 # Static capture checking
 
