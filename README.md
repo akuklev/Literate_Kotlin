@@ -4,6 +4,12 @@ When writing a computer science research paper or an educational tutorial, it's 
 
 The first two sections of the memo are devoted to syntax and appearance. The third section suggests some adjustments to the default behavior. In the last part, we discuss potential extensions pertaining to semantics that we believe will also benefit Kotlin itself in the long run.
 
+* Objects, capabilities, and structured ownership
+* Maintainable type providers for Kotlin
+* Literate Kotlin
+* Declarative Kotlin
+* Academic Kotlin
+
 # Basic syntax and appearance
 In 1984, Donald Knuth introduced literate programming, a practice of working not just on the source code but on a well-written and well-structured expository paper from which the source code can be extracted. The ultimate result should be the expository paper, which carefully walks through all the nooks and crannies of the source code, explaining the ideas, and documenting the reasoning behind certain decisions. It is, at the same time, both an essay interspersed with code snippets and a source code interleaved by accompanying text.
 
